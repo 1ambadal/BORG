@@ -1,0 +1,29 @@
+# .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.env
+venv/
+env/
+.venv/
+
+# Credentials
+token.pickle
+credentials.json
+token.json
+
+# IDEs
+.vscode/
+.idea/
+
+# Misc
+.DS_Store
+*.log
+*.db
+db/
+resumes/*
+!resumes/.gitkeep

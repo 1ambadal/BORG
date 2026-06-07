@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BORG</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="landing.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="landing.css">
+</head>
+
+<body>
+    <a href="index.html" class="corner-logo">
+        <img src="logo.png" alt="BORG" style="height: 100%; width: auto;">
+    </a>
+
+    <div class="command-center">
+        <header class="command-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h1 id="greeting-text">Loading...</h1>
+                <p id="current-date"></p>
+            </div>
+            <button id="theme-toggle" class="theme-toggle-btn">
+                <i data-feather="moon" id="theme-toggle-icon"></i>
+            </button>
+        </header>
+
+        <div class="at-a-glance-container">
+            <div id="at-a-glance-strip" class="at-a-glance-strip">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <div class="quick-access">
+            <div class="access-section">
+                <div class="shortcuts-grid">
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'todos')" class="shortcut-item">
+                        <i data-feather="check-square" style="width: 18px; color: var(--text-muted);"></i>
+                        Todos
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'reminders')" class="shortcut-item">
+                        <i data-feather="bell" style="width: 18px; color: var(--text-muted);"></i>
+                        Reminders
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'calendar')" class="shortcut-item">
+                        <i data-feather="calendar" style="width: 18px; color: var(--text-muted);"></i>
+                        Calendar
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'crons')" class="shortcut-item">
+                        <i data-feather="refresh-cw" style="width: 18px; color: var(--text-muted);"></i>
+                        Cron Jobs
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'finance')" class="shortcut-item">
+                        <i data-feather="dollar-sign" style="width: 18px; color: var(--text-muted);"></i>
+                        Finance
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'nutrition')" class="shortcut-item">
+                        <i data-feather="activity" style="width: 18px; color: var(--text-muted);"></i>
+                        Nutrition
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'bookmarks')" class="shortcut-item">
+                        <i data-feather="bookmark" style="width: 18px; color: var(--text-muted);"></i>
+                        Bookmarks
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'learning')" class="shortcut-item">
+                        <i data-feather="book-open" style="width: 18px; color: var(--text-muted);"></i>
+                        Learning
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'jobs')" class="shortcut-item">
+                        <i data-feather="briefcase" style="width: 18px; color: var(--text-muted);"></i>
+                        Job Tracker
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'scraped_jobs')" class="shortcut-item">
+                        <i data-feather="globe" style="width: 18px; color: var(--text-muted);"></i>
+                        Job Scraper
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'resumes')" class="shortcut-item">
+                        <i data-feather="file-text" style="width: 18px; color: var(--text-muted);"></i>
+                        Resumes
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'skills')" class="shortcut-item">
+                        <i data-feather="target" style="width: 18px; color: var(--text-muted);"></i>
+                        Gap Analysis
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'workouts')" class="shortcut-item">
+                        <i data-feather="heart" style="width: 18px; color: var(--text-muted);"></i>
+                        Workouts
+                    </a>
+                    <a href="app.html" onclick="localStorage.setItem('target_view', 'dumps')" class="shortcut-item">
+                        <i data-feather="archive" style="width: 18px; color: var(--text-muted);"></i>
+                        Brain Dump
+                    </a>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <script src="landing_app.js"></script>
+    <script>
+        feather.replace();
+    </script>
+</body>
+
+</html>
