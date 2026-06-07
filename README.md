@@ -8,6 +8,10 @@ Built with **LangGraph**, **FastAPI**, **PostgreSQL**, and **Telegram Bot API**.
 
 ---
 
+<img width="1284" height="825" alt="image" src="https://github.com/user-attachments/assets/01bb3f92-08ef-428a-bc14-c50eaa804f7f" />
+
+---
+
 ## What it can do
 
 | Capability | Example |
