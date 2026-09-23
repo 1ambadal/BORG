@@ -6,9 +6,9 @@ BORG is a fully autonomous personal AI OS that runs your life through Telegram a
 
 Built with **LangGraph**, **FastAPI**, **PostgreSQL**, and **Telegram Bot API**.
 
----
-
-<img width="1284" height="825" alt="image" src="https://github.com/user-attachments/assets/01bb3f92-08ef-428a-bc14-c50eaa804f7f" />
+<p align="center">
+  <img width="1284" height="825" alt="BORG dashboard" src="https://github.com/user-attachments/assets/01bb3f92-08ef-428a-bc14-c50eaa804f7f" />
+</p>
 
 ---
 
@@ -41,20 +41,25 @@ Telegram / Web Dashboard
          ↓
       FastAPI
          ↓
-    LangGraph Agent
-   (conditional routing)
-   /    |    |    \
-Gmail  Cal  DB   Tools
-         ↓
-     PostgreSQL
+ ⚡ TypeSafe Jev (System One Classifier)
+    /           │           \
+   /            │            \
+Chitchat    Supervisor     Fact Extractor
+ (0-Cost)  (LangGraph Agent)  (Jev Gated)
+             /    |    \
+          Gmail  Cal  Tools
+                ↓
+            PostgreSQL
 ```
 
-- **LangGraph** — agent orchestration with conditional edges; each capability is its own subgraph
-- **TypeSafe AI (Jev)** — System One pre-classification engine for dynamic tool pruning & intent routing
-- **FastAPI** — backend + webhook handler, runs on port `8000`
-- **PostgreSQL** — persistent memory, structured logs, factual store
-- **Telegram** — primary conversational interface
-- **Web Dashboard** — Notion-style UI for visualization and settings
+| Component | Role |
+|---|---|
+| **TypeSafe AI (Jev)** | System One pre-classification engine for dynamic tool pruning, intent routing, and fact-extraction gating |
+| **LangGraph** | Stateful agent orchestration with conditional tool edges and Python output merging |
+| **FastAPI** | Backend API & webhook handler |
+| **PostgreSQL** | Persistent conversational memory, structured logs, and factual store |
+| **Telegram** | Primary conversational interface |
+| **Web Dashboard** | Notion-style UI for visualization and settings |
 
 ---
 
@@ -67,17 +72,18 @@ User Message
      │
      ▼
 ⚡ Jev Pre-Classifier (~100ms)
-     ├─► Chitchat / Greeting  ──► Zero-Cost Canned Reply (0 LLM tokens, ~10ms)
-     ├─► General Text Q&A    ──► Supervisor with 0 Tools Bound (saves ~4,500 tool tokens)
-     ├─► Targeted Tool Intent ──► Pruned System Prompt + 1–3 Bound Tools (saves ~80% tokens)
-     └─► Fact Extraction Gate ──► Memory sync runs ONLY if long-term user facts are detected
+     ├─► Chitchat / Greeting   ──► Zero-Cost Canned Reply (0 LLM tokens, ~10ms)
+     ├─► General Text Q&A      ──► Supervisor with 0 Tools Bound (saves ~4,500 tool tokens)
+     ├─► Targeted Tool Intent  ──► Pruned System Prompt + 1–3 Bound Tools (saves ~80% tokens)
+     └─► Fact Extraction Gate  ──► Memory sync runs ONLY if long-term user facts are detected
 ```
 
-### Key Performance Wins:
-- **Zero-Cost Greeting Bypass**: $O(1)$ Python pre-filter & Jev short-circuit for casual chatter (**100% token savings**).
-- **Dynamic Tool Schema Pruning**: Narrows down 17 tool schemas to 1–3 relevant tools when bucket confidence $\ge 0.75$.
-- **Python Multi-Tool Output Merging**: Merges parallel tool results directly in Python, eliminating expensive 2nd synthesis LLM turns (**saves ~5,500 tokens & 3s latency**).
-- **Jev-Gated Memory Extraction**: Uses a parallel `Noul` check to skip background fact-extraction calls on **90%+ of non-CRUD turns**.
+**Key performance wins**
+
+- **Zero-cost greeting bypass** — O(1) Python pre-filter & Jev short-circuit for casual chatter (**100% token savings**)
+- **Dynamic tool schema pruning** — narrows down 17 tool schemas to 1–3 relevant tools when bucket confidence ≥ 0.75
+- **Python multi-tool output merging** — merges parallel tool results directly in Python, eliminating expensive second synthesis LLM turns (**saves ~5,500 tokens & 3s latency**)
+- **Jev-gated memory extraction** — uses a parallel `Noul` check to skip background fact-extraction calls on **90%+ of non-CRUD turns**
 
 ---
 
@@ -92,6 +98,7 @@ make run
 ```
 
 `make setup` will configure:
+
 - Telegram Bot Token
 - LLM API Key
 - Tavily API Key (web search)
@@ -105,7 +112,7 @@ make run
 1. Ensure a running PostgreSQL instance and set `DATABASE_URL` + `WEBHOOK_URL` in `.env`
 2. `WEBHOOK_URL` must be publicly accessible by Telegram
 
-**Google Integration (Gmail + Calendar):**
+**Google Integration (Gmail + Calendar)**
 
 Go to **Settings → Google Integration** in the web dashboard. Upload your `credentials.json` (must be **Web application** type from Google Cloud Console) and connect your account.
 
@@ -116,10 +123,10 @@ Go to **Settings → Google Integration** in the web dashboard. Upload your `cre
 ```
 ├── main.py              # FastAPI entry point, webhook handler
 ├── agent/               # LangGraph agent logic and tools
-├── services/            # PostgreSQL, Gmail, Calendar, and core services
-├── telegram_bot/        # Telegram handlers and config
-├── static/              # Web dashboard frontend
-└── scripts/             # Automated setup utilities
+├── services/             # PostgreSQL, Gmail, Calendar, and core services
+├── telegram_bot/         # Telegram handlers and config
+├── static/                # Web dashboard frontend
+└── scripts/                # Automated setup utilities
 ```
 
 ---
