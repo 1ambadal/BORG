@@ -9,8 +9,9 @@ class Settings(BaseSettings):
     DASHBOARD_USER_ID: int | None = None
     LLM_PROVIDER: str = "google"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    DEFAULT_SMART_MODEL: str = "deepseek-v4-flash"
-    DEFAULT_FAST_MODEL: str = "deepseek-v4-flash"
+    DEFAULT_SMART_MODEL: str = "deepseek-flash"
+    DEFAULT_FAST_MODEL: str = "deepseek-flash"
+    TYPESAFE_API_KEY: str | None = None
 
     DATABASE_URL: str = "postgresql://webdocuser:webdocpassword@localhost:5433/bot_db"
     DB_DIR: str = "db"

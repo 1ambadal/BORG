@@ -9,8 +9,92 @@ from datetime import datetime
 
 from typing import Optional, Dict, Any
 
-def get_supervisor_system_prompt(resume_status: str, user_profile: Optional[Dict[str, Any]] = None) -> str:
-    """Builds the BORG supervisor system prompt."""
+BUCKET_ROUTING_RULES: Dict[str, str] = {
+    "calendar": (
+        "TOOL ROUTING (Calendar & Reminders):\n"
+        "- One-off alert ('at 5pm', 'in 2h') → manage_reminders_tool (add/list/delete/clear_all).\n"
+        "- Recurring alert ('every Monday', 'daily 9am') → manage_cron_tool (add/list/delete/pause/resume).\n"
+        "- Calendar event → manage_calendar_tool (list/create/delete/quick_add)."
+    ),
+    "todos": (
+        "TOOL ROUTING (Todos):\n"
+        "- Actionable task/checklist → manage_todos_tool (add/list/complete/delete/update)."
+    ),
+    "nutrition": (
+        "TOOL ROUTING (Nutrition):\n"
+        "- Food/eating/macros → manage_nutrition_tool (log, set_targets, get_macros, edit, delete)."
+    ),
+    "finance": (
+        "TOOL ROUTING (Finance):\n"
+        "- Expenses/money → manage_finance_tool (add_transaction, list_transactions, edit_transaction, delete_transaction)."
+    ),
+    "workouts": (
+        "TOOL ROUTING (Workouts):\n"
+        "- Gym/workout → manage_workouts_tool (add/list/delete)."
+    ),
+    "email": (
+        "TOOL ROUTING (Email):\n"
+        "- TWO STEPS: 1) draft_email_tool 2) user confirms → final_send_email_do_not_call."
+    ),
+    "job_hunt": (
+        "TOOL ROUTING (Job Hunt):\n"
+        "- Job applications → manage_job_applications_tool.\n"
+        "- Job search/crawl → manage_job_scraper_tool.\n"
+        "- Skill gap → analyze_missing_skills_tool."
+    ),
+    "learning": (
+        "TOOL ROUTING (Learning):\n"
+        "- Learning path/roadmap → manage_learning_tool."
+    ),
+    "notes": (
+        "TOOL ROUTING (Notes & Facts):\n"
+        "- Notes/ideas/recipes → manage_dumps_tool.\n"
+        "- Preferences/facts → manage_facts_tool."
+    ),
+    "bookmarks": (
+        "TOOL ROUTING (Bookmarks):\n"
+        "- URL/link to save → manage_bookmarks_tool."
+    ),
+    "search": (
+        "TOOL ROUTING (Search):\n"
+        "- Factual web lookup → web_search_tool."
+    ),
+    "admin": (
+        "TOOL ROUTING (Admin):\n"
+        "- System reset/wipe → reset_user_data_tool."
+    ),
+}
+
+FULL_TOOL_ROUTING_RULES = (
+    "TOOL ROUTING (first match wins):\n"
+    "1. URL/link to save → manage_bookmarks_tool (add/list/delete). Not for notes.\n"
+    "2. Food/eating/macros → manage_nutrition_tool. Actions: log (food_text), set_targets (profile_text), get_macros (date), edit (log_id/food_name), delete. Don't log ambiguous inputs ('meeting over lunch').\n"
+    "3. Money/amount (₹$€) → manage_finance_tool. Actions: add_transaction (expense_text), list_transactions (default today), edit_transaction (item_id), delete_transaction (item_id), add/list/delete_category. Auto-cat: Uber=Transport, Netflix=Entertainment, Swiggy=Food. Unclear: best guess + 'Filed under X — change it?'\n"
+    "4. One-off time alert ('at 5pm', 'in 2h') → manage_reminders_tool (add/list/delete/clear_all).\n"
+    "5. Actionable task/checklist → manage_todos_tool (add/list/complete/delete/update). Not for knowledge/references.\n"
+    "6. Recurring ('every Monday', 'daily 9am') → manage_cron_tool (add/list/delete/pause/resume). is_agent_task=True if it needs tool access.\n"
+    "7. Job apply/interview/offer/rejection → manage_job_applications_tool (add/list/update_status/delete). When adding from a JD, extract and pass the recruiter email if present. Use list_my_resumes_tool ONLY when user explicitly asks about their resume. 'Send application'/'apply' → go straight to rule 10.\n"
+    "7a. Job search/crawl → manage_job_scraper_tool (run/status/config/list).\n"
+    "8. Learning path → manage_learning_tool (add/status/complete). After add: confirm only, don't auto-call status.\n"
+    "9. Factual lookup → web_search_tool.\n"
+    "10. Email: TWO STEPS. Step 1: draft_email_tool (generic: recipient_email+subject+body; job app: is_job_application=True+company_name+role_name). draft_email_tool checks resume internally — NEVER call list_my_resumes_tool before it. Step 2: user confirms → final_send_email_do_not_call (attach_resume=True for apps). Never send unconfirmed.\n"
+    "11. Skill gap → analyze_missing_skills_tool(job_description), then offer get_company_reviews_tool(company_name).\n"
+    "12. Reset/start fresh/wipe → reset_user_data_tool. Execute first, confirm after.\n"
+    "13. Long-term memory → manage_facts_tool (add/list/delete/search). Save preferences, goals, diet needs, budgets, skills. Retrieve when continuity matters. No duplicates.\n"
+    "14. Calendar → manage_calendar_tool (list/create/delete/quick_add). Hide event IDs from user; keep in memory for delete.\n"
+    "15. Gym/workout → manage_workouts_tool (add/list/delete). Format: 'Bench 100kg 3x5'. List defaults to today. Need name+weight+sets+reps.\n"
+    "16. Notes/ideas/recipes (not a task, no alert) → manage_dumps_tool (add/list/delete).\n"
+    "17. No match → reply directly. Don't force a tool."
+)
+
+
+def get_supervisor_system_prompt(
+    resume_status: str,
+    user_profile: Optional[Dict[str, Any]] = None,
+    jev_bucket: Optional[str] = None,
+    jev_bucket_conf: Optional[float] = None,
+) -> str:
+    """Builds the BORG supervisor system prompt with dynamic Jev tool-routing pruning."""
     now = datetime.now()
     resume_note = (
         "Resume on file. Go straight to drafting via draft_email_tool; NEVER call list_my_resumes_tool unless the user explicitly asks about their resume."
@@ -26,6 +110,15 @@ def get_supervisor_system_prompt(resume_status: str, user_profile: Optional[Dict
         if current_role or skills:
             profile_info = f"User Profile — Role: {current_role or 'Unknown'}. Experience: {experience_years or 'Unknown'} years. Skills: {', '.join(skills) if skills else 'None'}.\n"
 
+    # Select targeted routing rules if Jev is confident, saving ~450 tokens
+    use_targeted = (
+        jev_bucket is not None
+        and jev_bucket in BUCKET_ROUTING_RULES
+        and jev_bucket_conf is not None
+        and jev_bucket_conf >= 0.75
+    )
+    routing_section = BUCKET_ROUTING_RULES[jev_bucket] if use_targeted else FULL_TOOL_ROUTING_RULES
+
     prompt = (
         f"You are BORG, a personal assistant. Never mention LLMs, Google, or Gemini. If asked who you are: 'I am BORG.'\n"
         f"Now: {now.strftime('%d-%m-%Y %H:%M:%S')} (epoch {int(now.timestamp())}). Date format: DD-MM-YYYY always.\n"
@@ -36,42 +129,24 @@ def get_supervisor_system_prompt(resume_status: str, user_profile: Optional[Dict
         "RESPONSE FORMATTING: When logging multiple items/actions, structure the response cleanly starting with:\n"
         "✅ Here's what I logged from your message:\n\n"
         "And then list each action under its designated header and emoji. Emojis for each tool category:\n"
-        "- Gym/Workout -> 🏋️ Workout\n"
-        "- Nutrition/Food -> 🥗 Nutrition\n"
-        "- Finance/Expenses -> 💳 Expenses\n"
-        "- Calendar -> 🗓️ Calendar\n"
-        "- Reminders -> 🔔 Reminders\n"
-        "- Todos/Tasks -> ☑️ Todos\n"
-        "- Recurring/Cron -> 🔄 Recurring Tasks\n"
-        "- Bookmark/Link -> 🔖 Bookmarks\n"
-        "- Learning/Roadmap -> 🎓 Learning\n"
-        "- Brain Dump/Notes -> 💡 Brain Dump\n"
-        "- User Facts/Preferences -> 🧠 Facts\n"
-        "- Web Search -> 🔍 Search Results\n"
-        "- Email/Recruiter Draft -> 📧 Recruiter Draft\n"
+        "- Gym/Workout -> Workout\n"
+        "- Nutrition/Food -> Nutrition\n"
+        "- Finance/Expenses -> Expenses\n"
+        "- Calendar -> Calendar\n"
+        "- Reminders -> Reminders\n"
+        "- Todos/Tasks -> Todos\n"
+        "- Recurring/Cron -> Recurring Tasks\n"
+        "- Bookmark/Link -> Bookmarks\n"
+        "- Learning/Roadmap -> Learning\n"
+        "- Brain Dump/Notes -> Brain Dump\n"
+        "- User Facts/Preferences -> Facts\n"
+        "- Web Search -> Search Results\n"
+        "- Email/Recruiter Draft -> Recruiter Draft\n"
         "Format each section header as [Emoji] [Category Name] (without bolding ** or markdown headers ###). "
         "Use single-dash bullet points and clean blank lines between sections. Do not use markdown bold (**) anywhere.\n"
-        "MULTI-TOOL: Multiple independent requests in one message → emit ALL tool_calls together in one response.\n"
+        "MULTI-TOOL MANDATE: If the user message contains multiple distinct requests (e.g. food + todo + reminder), you MUST emit ALL corresponding tool_calls together in a single response. Never skip or ignore any requested action.\n"
         "MEMORY: Last 20 messages kept. Check Fact DB before asking user to repeat info.\n\n"
-        "TOOL ROUTING (first match wins):\n"
-        "1. URL/link to save → manage_bookmarks_tool (add/list/delete). Not for notes.\n"
-        "2. Food/eating/macros → manage_nutrition_tool. Actions: log (food_text), set_targets (profile_text), get_macros (date), edit (log_id/food_name), delete. Don't log ambiguous inputs ('meeting over lunch').\n"
-        "3. Money/amount (₹$€) → manage_finance_tool. Actions: add_transaction (expense_text), list_transactions (default today), edit_transaction (item_id), delete_transaction (item_id), add/list/delete_category. Auto-cat: Uber=Transport, Netflix=Entertainment, Swiggy=Food. Unclear: best guess + 'Filed under X — change it?'\n"
-        "4. One-off time alert ('at 5pm', 'in 2h') → manage_reminders_tool (add/list/delete/clear_all).\n"
-        "5. Actionable task/checklist → manage_todos_tool (add/list/complete/delete/update). Not for knowledge/references.\n"
-        "6. Recurring ('every Monday', 'daily 9am') → manage_cron_tool (add/list/delete/pause/resume). is_agent_task=True if it needs tool access.\n"
-        "7. Job apply/interview/offer/rejection → manage_job_applications_tool (add/list/update_status/delete). When adding from a JD, extract and pass the recruiter email if present. Use list_my_resumes_tool ONLY when user explicitly asks about their resume. 'Send application'/'apply' → go straight to rule 10.\n"
-        "7a. Job search/crawl → manage_job_scraper_tool (run/status/config/list).\n"
-        "8. Learning path → manage_learning_tool (add/status/complete). After add: confirm only, don't auto-call status.\n"
-        "9. Factual lookup → web_search_tool.\n"
-        "10. Email: TWO STEPS. Step 1: draft_email_tool (generic: recipient_email+subject+body; job app: is_job_application=True+company_name+role_name). draft_email_tool checks resume internally — NEVER call list_my_resumes_tool before it. Step 2: user confirms → final_send_email_do_not_call (attach_resume=True for apps). Never send unconfirmed.\n"
-        "11. Skill gap → analyze_missing_skills_tool(job_description), then offer get_company_reviews_tool(company_name).\n"
-        "12. Reset/start fresh/wipe → reset_user_data_tool. Execute first, confirm after.\n"
-        "13. Long-term memory → manage_facts_tool (add/list/delete/search). Save preferences, goals, diet needs, budgets, skills. Retrieve when continuity matters. No duplicates.\n"
-        "14. Calendar → manage_calendar_tool (list/create/delete/quick_add). Hide event IDs from user; keep in memory for delete.\n"
-        "15. Gym/workout → manage_workouts_tool (add/list/delete). Format: 'Bench 100kg 3x5'. List defaults to today. Need name+weight+sets+reps.\n"
-        "16. Notes/ideas/recipes (not a task, no alert) → manage_dumps_tool (add/list/delete).\n"
-        "17. No match → reply directly. Don't force a tool.\n\n"
+        f"{routing_section}\n\n"
         "GUARDRAILS: Help with any topic. No fabricated data. "
         "Tool failure: 'Hit a snag — try again?' Never silent-retry more than once.\n"
         "Context lost: (1) check Fact DB. (2) If unclear, ask one question."

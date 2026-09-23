@@ -191,7 +191,7 @@ async def manage_reminders_tool(
             job_id, result = add_reminder(message.strip(), target_epoch, chat_id)
             if job_id:
                 time_str = result.strftime("%d-%m-%Y at %H:%M")
-                return f"__REFORMAT__\nReminder set: '{message}' for {time_str}. [ID: {job_id}]"
+                return f"🔔 Reminder set: **{message}** — {time_str}."
             return f"Failed to set reminder: {result}"
 
         elif action == "list":
@@ -201,10 +201,10 @@ async def manage_reminders_tool(
             if not reminders:
                 return "No pending one-off reminders."
             lines = [
-                f"{r['next_run_time'].strftime('%d-%m-%Y %H:%M')} | {r['message']} (ID: {r['id']})"
+                f"• {r['next_run_time'].strftime('%d-%m-%Y %H:%M')} — {r['message']} (ID: {r['id']})"
                 for r in reminders
             ]
-            return "__REFORMAT__\nPending One-off Reminders:\n\n" + "\n".join(lines)
+            return "📋 **Your upcoming reminders:**\n\n" + "\n".join(lines)
 
         elif action == "delete":
             if not reminder_id:
@@ -259,7 +259,7 @@ async def manage_cron_tool(
             )
             if job_id:
                 task_type = "agentic task" if is_agent_task else "recurring reminder"
-                return f"__REFORMAT__\nScheduled {task_type}: '{message}' ({schedule}). [ID: {job_id}]"
+                return f"✅ Scheduled {task_type}: **{message}** ({schedule})."
             return f"Failed to schedule recurring task: {schedule}"
 
         elif action == "list":
@@ -291,7 +291,7 @@ async def manage_cron_tool(
                 lines.append(
                     f"- {task_type} {r['message']}: {sched_info} ({status}){next_run} [ID: {r['id']}]"
                 )
-            return "__REFORMAT__\nRecurring Tasks:\n\n" + "\n".join(lines)
+            return "🔁 **Your recurring tasks:**\n\n" + "\n".join(lines)
 
         elif action == "delete":
             if not reminder_id:
@@ -1400,7 +1400,7 @@ async def manage_calendar_tool(
                 start_time = e["start"].get("dateTime", e["start"].get("date"))
                 lines.append(f"- {start_time}: {e['summary']} [ID: {e['id']}]")
 
-            return "__REFORMAT__\n" + "\n".join(lines)
+            return "📅 **Upcoming events (next 30 days):**\n\n" + "\n".join(lines)
 
         elif action == "create":
             if not all([summary, start_time, end_time]):

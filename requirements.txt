@@ -28,3 +28,4 @@ playwright
 langchain-deepseek
 langchain-openai
 fastapi[standard]
+langchain-typesafe
